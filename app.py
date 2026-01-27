@@ -45,7 +45,7 @@ app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 
 # Configuração do MongoDB - URI obtida do arquivo .env
-app.config['MONGODB_HOST'] = f"mongodb+srv://almeidaxavier:{os.getenv("MONGODB_PASSWORD")}@ollamaapi.ic5dh8p.mongodb.net/?appName=OllamaAPI"
+app.config['MONGODB_HOST'] = f"mongodb+srv://almeidaxavier:{os.getenv('MONGODB_PASSWORD')}@ollamaapi.ic5dh8p.mongodb.net/?appName=OllamaAPI"
 
 # Tempo de vida da sessão do usuário (1 hora)
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)
