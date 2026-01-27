@@ -21,12 +21,11 @@ from flask_caching import Cache
 from functools import wraps
 from datetime import timedelta
 from concurrent.futures import ThreadPoolExecutor
+from bson.objectid import ObjectId
 import concurrent
 import time # for debugging
 import threading
 
-from forms.user import SubmitQueryForm, CreateArticle, LoginUser, CreateUser
-from forms.search import Search
 from backend.database.db import db, upload_file, Upload, User
 from backend.ollama_thread_manager import read_markdown_to_html, ollama_queue
 from dotenv import load_dotenv
@@ -46,7 +45,7 @@ app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 
 # Configuração do MongoDB - URI obtida do arquivo .env
-app.config['MONGODB_HOST'] = os.getenv("MONGODB_URI")
+app.config['MONGODB_HOST'] = f"mongodb+srv://almeidaxavier:{os.getenv("MONGODB_PASSWORD")}@ollamaapi.ic5dh8p.mongodb.net/?appName=OllamaAPI"
 
 # Tempo de vida da sessão do usuário (1 hora)
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)
@@ -100,7 +99,7 @@ def check_if_logged_in(f):
     """
     @wraps(f)
     def decorated(*args, **kwargs):
-        if not session.get("logged_in"):
+        if not session.get("logged_in") or not session.get("username"):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated
@@ -146,31 +145,100 @@ def update_load(executor:ThreadPoolExecutor):
 @check_if_logged_in
 def home():
     """
-    Página inicial (dashboard) do usuário autenticado.
+    Página inicial (dashboard) do usuário autenticado, com formulário para submeter uma pergunta/problema para raciocínio profundo.
     
-    Exibe um formulário de busca que permite pesquisar logs do usuário.
-    Requer autenticação (redireciona para login se não autenticado).
+    Este formulário coleta:
+    - Pergunta: O problema a ser resolvido
+    - Contexto: Informações adicionais para orientar o raciocínio
+    - Configurações de raciocínio: max_width, max_depth, n_tokens
+    - Modelo: Qual modelo Ollama usar
+    - API Key: Autenticação para Ollama
+    - Log Dir: Diretório para armazenar logs
     
-    GET: Retorna o formulário de busca
-    POST: Processa a busca e redireciona para os logs do usuário
+    GET: Exibe o formulário vazio
+    POST: 
+        1. Valida o formulário
+        2. Cria arquivos iniciais (context.md, response.md, article.md)
+        3. Redireciona para /write com os parâmetros para iniciar raciocínio
     
     Returns:
-        str: HTML renderizado da página inicial ou redirecionamento
+        str: HTML do formulário ou redirecionamento para processar pergunta
         
-    Variables de Template:
-        - form: Instância do formulário Search
-    """
-    # Verifica se o usuário está autenticado (dupla verificação)
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
+    Database Operations:
+        - Cria 3 arquivos iniciais por pergunta:
+          * context.md: Contexto fornecido
+          * response.md: Vazio, será preenchido com resposta
+          * article.md: Vazio, será preenchido se artigo for gerado
     
-    form = Search()
+    Redirect:
+        - Redireciona para rota /write com todos os parâmetros
+        - Inicia processamento de raciocínio
+    """
+    
+    if request.method == 'POST':
+        # Obtém usuário autenticado
+        usr = User.objects(username=session.get('username')).first()
+        
+        # Define diretório de log (padrão: 'default_log' se não fornecido)
+        log_dir_value = request.form.get('log_dir').lower() or 'default_log'
+        cits = [log.strip() for log in request.form.get('citations').split('#')]
+        while '' in cits:
+            cits.remove('')
 
-    if form.validate_on_submit():
-        query = form.query.data
-        return redirect(url_for('view_logs_links', username=query, log_dir=query))
-       
-    return render_template('index.html', form=form, Upload=Upload, users=User, current_user=session.get('username'))
+        session_id = uuid.uuid4()
+        print(f"Request desc {request.form.get("description")}")
+
+        # Cria arquivo de contexto inicial
+        upload_file(
+            user=usr,
+            log_dir=log_dir_value,
+            filename='context.md',
+            raw_file=f"Initial context: {request.form.get('context')}".encode('utf-8'),
+            description=request.form.get('description'),
+            session_id=session_id,
+            citations=cits,
+            initial=True
+        )
+
+        # Cria arquivo de resposta vazio (será preenchido durante raciocínio)
+        upload_file(
+            user=usr,
+            log_dir=log_dir_value,
+            filename='response.md',
+            raw_file=" ".encode('utf-8'),
+            description=request.form.get('description'),
+            session_id=session_id,
+            citations=cits,
+            initial=True
+        )
+
+        # Cria arquivo de artigo vazio (será preenchido se gerado)
+        upload_file(
+            user=usr,
+            log_dir=log_dir_value,
+            filename='article.md',
+            raw_file=" ".encode('utf-8'),
+            session_id=session_id,
+            description=request.form.get('description'),
+            citations=cits,
+            initial=True
+        )
+
+        # Redireciona para iniciar o raciocínio com os parâmetros
+        return redirect(url_for('write', 
+            query=request.form.get('query'), 
+            prompt=None, 
+            username=session.get('username'), 
+            log_dir=log_dir_value, 
+            model=request.form.get('model_name'), 
+            max_width=request.form.get('max_width'), 
+            max_depth=request.form.get('max_depth'), 
+            n_tokens=request.form.get('n_tokens') if request.form.get('n_tokens') is not None else 10000, 
+            api_key=request.form.get('api_key')
+        ))
+    
+    return render_template('form.html')
+
 
 
 @app.route("/login", methods=['GET', 'POST'])
@@ -197,11 +265,10 @@ def login():
         - "Sucessfully logged in": Login bem-sucedido
         - "Incorrect Password" (erro): Senha incorreta
     """
-    form = LoginUser()
     
-    if form.validate_on_submit():
-        username_or_email = form.username_or_email.data
-        password = form.password.data
+    if request.method == 'POST':
+        username_or_email = request.form.get('username_or_email')
+        password = request.form.get('password')
 
         # Define a sessão como permanente (com expiração)
         session.permanent = True
@@ -209,9 +276,11 @@ def login():
         # Busca por usuário usando username OU email
         users = User.objects(__raw__={'$or':[{'username':username_or_email},{'email':username_or_email}]})
         
+
         if users.first() is None:
             flash("No users matching the description", 'error')
         else:
+            print("OPA")
             usr = users.first()
             
             # Valida a senha contra o hash armazenado
@@ -222,12 +291,13 @@ def login():
 
                 # Garante que as mudanças na sessão sejam persistidas
                 session.modified = True
-
-                return redirect(url_for('home'))
+                print("OPA")
+                return redirect("/")
             else:
+                print("AAAA")
                 flash('Incorrect Password', 'error')
 
-    return render_template('user_forms.html', login=True, form=form)
+    return render_template('user_forms.html', login=True, ch_user=False)
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -259,12 +329,11 @@ def register():
         - Cria novo documento User no MongoDB
         - Hash de senha gerado automaticamente
     """
-    form = CreateUser()       
-    
-    if form.validate_on_submit():
-        username = form.username.data
-        email = form.email.data
-        password = form.password.data
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        phone = request.form.get('phone')
 
         session.permanent = True
         
@@ -279,7 +348,8 @@ def register():
             session['username'] = username
             
             # Cria novo usuário com ID sequencial
-            usr = User(username=username, email=email)
+            usr = User(username=username, email=email, phone=phone)
+            usr = User(username=username, email=email, phone=phone)
             
             # Gera hash bcrypt da senha
             usr.generate_password_hash(password)
@@ -292,53 +362,56 @@ def register():
 
             return redirect(url_for('home'))
     
-    return render_template('user_forms.html', login=False, form=form)
-
+    print('AAAA')
+    return render_template('user_forms.html', login=False, ch_user=False)
 
 # ============================================================================
 # ROTAS DE VISUALIZAÇÃO DE LOGS
 # ============================================================================
 
+@app.route("/search", methods=['GET', 'POST'])
+def view_logs_links():
+    if request.method == 'POST':
+        search_query = request.form.get('search', '').strip()
+        return redirect(url_for('view_logs_links_query', query=search_query.lower(), all=request.args.get('all', False)))
 
-@app.route("/search?<log_dir>")
-def view_logs_links(log_dir:str):
-    """
-    Lista todos os diretórios de logs (runs) para um usuário específico.
-    
-    Exibe os links para acessar cada run individual (contendo response.md e/ou article.md).
-    
-    Args:
-        username (str): Nome de usuário para listar logs
-    
-    Returns:
-        str: HTML com lista de links para logs ou redirecionamento em caso de erro
-        
-    Flash Messages:
-        - "User not found" (erro): Usuário não existe
-        - "No logs found for this user/log_dir" (erro): Usuário tem nenhum log
-        
-    Variables de Template:
-        - query: Iterável de strings formatadas como 'username/log_dir'
-        - read_markdown_to_html: Função para renderizar Markdown em templates
-    """
+    projects = []
+    if request.args.get('all', False):
+        projects = Upload.objects(filename__contains='/response.md')
+        return render_template('search.html', researches=projects, username=False)
 
-    # Busca todos os uploads contendo 'response.md' do usuário
-    responses = Upload.objects(filename__contains=os.path.join(log_dir, "response.md"))
+    else:
+        user = User.objects(username=session.get('username', '')).first()
+        projects = Upload.objects(filename__contains='/response.md', creator=user)
+
+        return render_template('search.html', researches=projects, username=session.get('username', ''))
+
+@app.route("/search", methods=["GET", "POST"])
+def view_logs_links_query():
+    if request.method == "POST":
+        search_query = request.form.get('search', '').strip()
+        return redirect(url_for('view_logs_links_query', search=search_query.lower(), all=request.args.get('all', False)))
     
-    # Extrai os diretórios de log formatados como 'username/log_dir'
-    log_dirs_responses = list(map(lambda x: x.creator.username+'/'+x.filename.split("/")[0] if x.creator else x.creator, responses))
-    while None in log_dirs_responses:
-        log_dirs_responses.remove(None)
+    projects = []
+    query = request.args.get('query', '')
+    if request.args.get('all', False):
+        projects = Upload.objects(filename__contains=query+'/response.md')
+        return render_template('search.html', researches=projects, username=False)
 
-    if responses.first() is None:
-        flash("No logs found for this user/log_dir", 'error')
-        return redirect(url_for('home'))
-      
-    return render_template('search.html', query=log_dirs_responses, read_markdown_to_html=read_markdown_to_html)
+    else:
+        if query == '':
+            return redirect(url_for('view_logs_links', all=True))
 
+        username = session.get('username')
+        user = User.objects(username=username).first()
+        projects = Upload.objects(filename__contains=query+'/response.md', creator=user)
+
+        for project in projects:
+            project.save()
+
+        return render_template('search.html', researches=projects, username=username)
 
 @app.route("/<username>/<log_dir>")
-@cache.cached(timeout=1000)
 def view_logs(username: str, log_dir: str):
     """
     Exibe um log específico (run) completo de um usuário.
@@ -372,7 +445,7 @@ def view_logs(username: str, log_dir: str):
 
     # Busca o arquivo de resposta para este log
     response = Upload.objects(filename__contains=f"{log_dir}/response.md", creator=user).first()
-    
+
     # Busca o arquivo de artigo (pode não existir)
     article = Upload.objects(filename__contains=f"{log_dir}/article.md", creator=user).first()
     
@@ -380,7 +453,7 @@ def view_logs(username: str, log_dir: str):
         flash("No logs found for this user/log_dir", 'error')
         return redirect(url_for('home'))
     
-    return render_template('response.html', response=response, article=article, response_id=response.session_id, article_id=article.session_id, read_markdown_to_html=read_markdown_to_html)
+    return render_template('response.html', response=response.file.read().decode("utf-8"), article=article.file.read().decode("utf-8"), response_id=response.session_id, article_id=article.session_id, read_markdown_to_html=read_markdown_to_html)
 
 
 # ============================================================================
@@ -432,7 +505,7 @@ def write(username: str, log_dir: str):
 
     user = User.objects(username=username).first()
     params = {
-        "log_dir":log_dir,
+        "log_dir":log_dir.lower(),
         "username": username,
         "user": user,
     
@@ -486,6 +559,7 @@ def write_article(username: str, log_dir: str):
     user = User.objects(username=username).first()
     params = {
         "user":user,
+        "username": username,
         "log_dir": log_dir,
         **request.args
 
@@ -512,109 +586,46 @@ def delete(username:str, log_dir:str):
 
     usr = User.objects(username=username).first()
     objs = Upload.objects(filename__contains=log_dir, creator=usr)
-    if session.get(log_dir):
-       ollama_queue.cleanup_session(session.get(log_dir).get("article"), session.get(log_dir).get("response"))
+    ollama_queue.cleanup_session(*map(lambda x:x.session_id, objs))
     
     for obj in objs:
         obj.delete()
 
-    return redirect(url_for("home"))    
+    return redirect(url_for("home"))
 
-
-@app.route("/submit_question", methods=["GET", "POST"])
+@app.route('/logout')
 @check_if_logged_in
-def submit_question():
-    """
-    Formulário para submeter uma pergunta/problema para raciocínio profundo.
-    
-    Este formulário coleta:
-    - Pergunta: O problema a ser resolvido
-    - Contexto: Informações adicionais para orientar o raciocínio
-    - Configurações de raciocínio: max_width, max_depth, n_tokens
-    - Modelo: Qual modelo Ollama usar
-    - API Key: Autenticação para Ollama
-    - Log Dir: Diretório para armazenar logs
-    
-    GET: Exibe o formulário vazio
-    POST: 
-        1. Valida o formulário
-        2. Cria arquivos iniciais (context.md, response.md, article.md)
-        3. Redireciona para /write com os parâmetros para iniciar raciocínio
-    
-    Returns:
-        str: HTML do formulário ou redirecionamento para processar pergunta
-        
-    Database Operations:
-        - Cria 3 arquivos iniciais por pergunta:
-          * context.md: Contexto fornecido
-          * response.md: Vazio, será preenchido com resposta
-          * article.md: Vazio, será preenchido se artigo for gerado
-    
-    Redirect:
-        - Redireciona para rota /write com todos os parâmetros
-        - Inicia processamento de raciocínio
-    """
-    form = SubmitQueryForm()
-    
-    if form.validate_on_submit() and request.method == 'POST':
-        # Obtém usuário autenticado
-        usr = User.objects(username=session.get('username')).first()
-        
-        # Define diretório de log (padrão: 'default_log' se não fornecido)
-        log_dir_value = form.log_dir.data or 'default_log'
-        cits = [log.strip() for log in form.citations.data.split('#')]
-        while '' in cits:
-            cits.remove('')
+def logout():
+    session['username'] = None
+    return redirect('/login')
 
-        session_id = uuid.uuid4()
+@app.route('/delete')
+@check_if_logged_in
+def delete_account():
+    user = User.objects(username=session.get('username')).first()
+    creations = Upload.objects(creator=user)
+    if user:
+        user.delete()
+        for c in creations:
+            c.delete()
 
-        # Cria arquivo de contexto inicial
-        upload_file(
-            user=usr,
-            log_dir=log_dir_value,
-            filename='context.md',
-            raw_file=f"Initial context: {form.context.data}".encode('utf-8'),
-            session_id=session_id,
-            citations=cits,
-            initial=True
-        )
+    session['username'] = None
+    return redirect('/login')
 
-        # Cria arquivo de resposta vazio (será preenchido durante raciocínio)
-        upload_file(
-            user=usr,
-            log_dir=log_dir_value,
-            filename='response.md',
-            raw_file=" ".encode('utf-8'),
-            session_id=session_id,
-            citations=cits,
-            initial=True
-        )
+@app.route('/update', methods=['GET', 'POST'])
+def update_user():
+    if request.method == 'POST':
+        old_username = request.form.get('old_username')
+        if old_username == session.get('username'):
+            new_username = request.form.get('new_username')
+            user = User.objects(username=session.get('username')).first()
 
-        # Cria arquivo de artigo vazio (será preenchido se gerado)
-        upload_file(
-            user=usr,
-            log_dir=log_dir_value,
-            filename='article.md',
-            raw_file=" ".encode('utf-8'),
-            session_id=session_id,
-            citations=cits,
-            initial=True
-        )
+            session['username'] = new_username
+            user.username = new_username
+            user.save()
 
-        # Redireciona para iniciar o raciocínio com os parâmetros
-        return redirect(url_for('write', 
-            query=form.query.data, 
-            prompt=None, 
-            username=session.get('username'), 
-            log_dir=log_dir_value, 
-            model=form.model_name.data, 
-            max_width=form.max_width.data, 
-            max_depth=form.max_depth.data, 
-            n_tokens=form.n_tokens.data if form.n_tokens.data is not None else 100000, 
-            api_key=form.api_key.data
-        ))
-    
-    return render_template('form.html', form=form)
+            return redirect('/')
+    return render_template("user_forms.html", login=False, ch_user=True)
 
 
 @app.route("/submit_article", methods=["GET", "POST"])
@@ -651,24 +662,22 @@ def submit_article():
     Model Selection:
         - Se modelo não for especificado, usa thinker.model (padrão)
     """
-    form = CreateArticle()
     
-    if form.validate_on_submit():
-        log_dir = form.log_dir.data
-        iterations = form.n_iterations.data
-        api_key = form.api_key.data
+    if request.method == 'POST':
 
         # Redireciona para iniciar geração do artigo
         
         return redirect(url_for("write_article", 
             username=session.get("username"), 
-            log_dir=log_dir, 
-            model = form.model.data,
-            iterations=iterations, 
-            api_key=api_key
+            **request.form
         ))
     
-    return render_template("create_article.html", form=form)
+    user = User.objects(username=session.get("username")).first()
+    objs = Upload.objects(creator=user)
+    if not objs:
+       return render_template("create_article.html", logs=[])
+    objs = [obj for obj in objs if obj.filename.split("/")[1] == "response.md"]
+    return render_template("create_article.html", logs=objs)
 
 
 # ============================================================================

@@ -1,22 +1,24 @@
-{% extends 'base.html' %}
+{% extends 'header.html' %}
 {%block link%}
-<link rel="stylesheet" href="{{url_for('static', filename='css/response.css')}}">
+<link rel="stylesheet" href="{{url_for('static', filename='css/main.css')}}" data-turbo-track="reload">
+<link rel="stylesheet" href="{{url_for('static', filename='css/response.css')}}" data-turbo-track="reload">
+<link rel="stylesheet" href="{{url_for('static', filename='css/header-out.css')}}" data-turbo-track="reload">
+<link rel="stylesheet" href="{{url_for('static', filename='css/form.css')}}" data-turbo-track="reload">
 {%endblock%}
-
-{% block content %}
-<h3>Log and article creation</h3>
+{% block main %}
+<h3 style="position:relative; left:50px">Criação do Registro e do Artigo</h3>
 <div class="two-column">
     <div class="response-content markdown" id="responseContent-{{response_id}}">
         {% if response %}
             <div class="content-wraper">
-                {{read_markdown_to_html(response.file.read().decode("utf-8"))|safe}}
+                {{read_markdown_to_html(response)|safe}}
             </div>
         {% endif %}
     </div>
     <div class="article-content markdown" id="articleContent-{{article_id}}">
         {% if article %}
             <div class="content-wraper">
-                {{read_markdown_to_html(article.file.read().decode("utf-8"))|safe}}
+                {{read_markdown_to_html(article)|safe}}
             </div>
         {% endif %}
     </div>

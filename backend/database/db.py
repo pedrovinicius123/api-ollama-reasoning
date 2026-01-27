@@ -81,7 +81,9 @@ class User(Document):
     
     username = StringField(required=True, unique=True)
     email = StringField(required=True, unique=True)
+    phone = StringField(required=True, unique=True)
     password_hash = StringField(required=True)
+
 
     def generate_password_hash(self, new_password):
         """
@@ -215,9 +217,10 @@ class Upload(Document):
         - Metadados armazenados em collections separadas
     """
     
-    creator = ReferenceField(User)
+    creator = ReferenceField(User, required=True)
     depth = IntField(default=0)
     filename = StringField(required=True)
+    description = StringField(required=True) 
     file = FileField(required=True)
     session_id = StringField(required=True)
     citations = ListField()
@@ -232,7 +235,7 @@ class Upload(Document):
 # FUNÇÃO AUXILIAR: UPLOAD_FILE
 # ============================================================================
 
-def upload_file(user: User, log_dir: str, filename: str, raw_file, initial: bool = False, citations:list =[], session_id=""):
+def upload_file(user: User, log_dir: str, filename: str, raw_file, initial: bool = False, citations:list =[], session_id="", description=''):
     """
     Gerencia upload/atualização de arquivos no banco de dados.
     
@@ -331,6 +334,7 @@ def upload_file(user: User, log_dir: str, filename: str, raw_file, initial: bool
         # Armazena arquivo via GridFS
         new_upload_doc.file.put(raw_file, content_type="text/markdown")
         new_upload_doc.register_refferences(*citations) if citations else None
+        new_upload_doc.description = description
         new_upload_doc.save()
 
         return new_upload_doc

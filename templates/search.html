@@ -1,7 +1,36 @@
-{% extends 'base.html' %}
+{% extends 'header.html' %}
+{%block link%}
+<link rel="stylesheet" href="{{url_for('static', filename='css/search.css')}}" data-turbo-track="reload">
+<link rel="stylesheet" href="{{url_for('static', filename='css/header-out.css')}}" data-turbo-track="reload">
+<link rel="stylesheet" href="{{url_for('static', filename='css/form.css')}}" data-turbo-track="reload">
+{% endblock %}
+{% block main %}
+<div class="content">
+    <form class="search-bar" action="/search" method="post">
+        <input type="search" name="search" id="search">
+        <button type="submit"> Search </button>
+    </form>
+    <div class="researches">
+        {% for research in researches %}
+            <div class="rs">
+                <h1>{{research.filename.split('/')[0]}}</h1>
+                <p>{{research.description}} ({{research.creator.username}})</p>
+                <div class="research-btns">
+                    {% if username %}
+                      <a href="/{{username}}/{{research.filename.split('/')[0]}}/delete">Delete</a>
+                      <a href="/{{username}}/{{research.filename.split('/')[0]}}"> See </a>
+                    
+                    {% else %}
+                      <a href="{{research.creator.username}}/{{research.filename.split('/')[0]}}/delete"> Delete </a>
+                      <a href="{{research.creator.username}}/{{research.filename.split('/')[0]}}">See</a>                    
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    <footer>
+        <a href="/">Novo projeto</a>
+    </footer>
 
-{% block content %}
-{% for content in query %}
-    <a href="/{{content}}">{{content}}</a><br>
-{% endfor %}
+</div>
 {% endblock %}

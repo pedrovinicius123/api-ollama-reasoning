@@ -89,7 +89,9 @@ def store_article(thinker, app, username: str, log_dir: str, iterations:int = 1,
     # Executa o gerador dentro de um contexto de aplicação Flask
     # (necessário para acesso ao banco de dados e sessões)
     with app.app_context():
-        gen = thinker.write_article(username=username, log_dir=log_dir, iterations=iterations_int, n_tokens=n_tokens, searched_in=article_obj.citations)
+        print("Starting generation")
+        gen, response = thinker.write_article(username=username, log_dir=log_dir, iterations=iterations_int, n_tokens=n_tokens, searched_in=article_obj.citations)
+        print("POST GENERATION")
         logging.info(f'gen {gen}')
         for chunk in gen:
             if chunk:
@@ -204,6 +206,7 @@ class OllamaRequestQueue:
     def _process_request_article(self, app, **kwargs):
         logging.info(f"Session key: {kwargs.get("session_id")}")
         thinker = self._get_reasoning_instance(**kwargs)
+        print("N Tokens", kwargs.get("n_tokens"))
         result = store_article(
             thinker,
             app,

@@ -41,6 +41,7 @@ PROBLEM: {prompt}
 
 Do not write an answer yet, only propose the alternatives.
 Use $$ for block math and $ for inline math.
+Answer with the language of the Problem (for example, if the statement is written in pt-br, answer with that language)
 """
 """
 Prompt inicial para gerar alternativas de solução.
@@ -51,6 +52,7 @@ Instrui o modelo a:
 3. Usar apenas conceitos matemáticos conhecidos
 4. Não propor conjecturas (apenas conceitos estabelecidos)
 5. Renderizar math em KaTeX
+6. Responder as questões em sua própria linguagem
 
 Retorna: string com o prompt formatado
 """
@@ -80,6 +82,7 @@ Retorna: string com o prompt formatado
 
 article_prompt = lambda iterations: f"""
 Now, write a detailed article about the problem developed in this chain of thoughs
+Write at the language present on the chain of thoughs!
 Use the following structures
 
 1. Introduction: Briefly introduce the problem in the chain of thoughs and its significance.
@@ -366,6 +369,8 @@ class Reasoning:
         return iterate(), 200
 
     def write_article(self, username: str, log_dir: str, searched_in:list, iterations: int, n_tokens: int):
+        print("SOCOROOOOOOOOOOOOOOOOO")
+        
         """
         Gera um artigo estruturado baseado no raciocínio realizado.
         
@@ -414,7 +419,9 @@ class Reasoning:
             ...     print(chunk, end='', flush=True)
         """
 
+        print("HEEEERRREEEE")
         usr = User.objects(username=username).first()
+        print("HERE")
         def iterate(usr=usr):
             """
             Função interna que itera para gerar artigo.
@@ -443,6 +450,7 @@ class Reasoning:
                 
                 # Acumula prompt anterior para contexto
                 gen = "\n\n"
+                print("ITERATION")
                 
                 # Faz requisição ao Ollama
                 r = make_request_ollama_reasoning(
@@ -474,4 +482,4 @@ class Reasoning:
 
             yield [f'[{s}](s)' for s in searched_in].join('\n')
 
-        return iterate()
+        return iterate(), 200

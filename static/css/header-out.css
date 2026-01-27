@@ -1,0 +1,67 @@
+header{
+    display: inline-flex;
+    position: relative;
+    align-self: flex-start;
+    background-color: #aaaaaa;
+    padding:30px;
+    width: 100%;
+    margin-bottom: 0;
+}
+
+header img:first-child{
+    display:none;
+}
+
+header .links a{
+    width: 70px;
+    height: 15px;
+    border-radius: 50px;
+    background-color: #ffffff;
+    color: #000000;
+    text-decoration: none;
+    padding: 10px;
+    text-align: center;
+    margin-left: 25px;
+    font-size: 13px;
+}
+
+.links{
+    display:flex;
+    flex-wrap: nowrap;
+    justify-content: space-around;
+    margin-left: 55%;
+
+}
+
+.links #a1{
+    align-self: center;
+    color: #ffffff;
+    background-color: #000000;
+}
+
+.links #a2 {
+
+    align-self:center;
+    color:black;
+    background-color: white;
+
+}
+
+.links #a3{
+    align-self: center;
+    background-color: #1115ff;
+    color: #ffffff;
+}
+
+.links a:last-child {
+    background-image: url('../img/porfile.svg');
+    background-color: #aaa;
+    background-repeat:  no-repeat;
+    background-position: center;
+
+}
+
+.content{
+    height: 60%;
+
+}

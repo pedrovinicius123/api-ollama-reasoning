@@ -1,0 +1,26 @@
+.content form{
+    display: flexbox;
+    justify-content: space-evenly;
+
+
+}
+
+.content form button {
+    height: 41px;
+    width: 100px;
+    align-self: flex-start;
+
+}
+
+.content form label{
+    margin-bottom: 0;
+
+
+}
+
+select {
+    max-width: 500px;
+    min-width: auto;
+
+
+}

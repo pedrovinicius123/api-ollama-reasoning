@@ -1,42 +1,167 @@
-body {
-    margin: 0;
-    height:100%;
-    font-family: 'Courier New', Courier, monospace;
+
+html {
+    height: 130%;
+    width: 100%
+
 }
 
-.content{
+body {
+    display:flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0;
+    height: 100%;
+    width: 100%;
+    font-family: 'Courier New', Courier, monospace;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 1) 0%, rgba(17, 21, 255, 1) 100%);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 110vw, 130vh;
+    box-sizing: border-box;
+}
+
+body header p svg{
+    width: 100px;
+
+
+}
+
+header {
+    margin-left: 0;
+    gap: 50%;
+    width: calc(100%-190px);
+}
+
+.content {
+    margin-top: 70px;
+    height: 60%;
+    width: 50%;
+    display:flex;
+    justify-content: center;
+    flex-direction: column;
+    padding: 50px;
+    margin-top: 90px;
+    gap: 20px;
+    background: rgba(0,0,0, 0.8);
+    box-shadow: 0 0 10px 5px rgba(0,0,0,0.4);
+    color: white;
+    border-radius: 58px;
+}
+
+.content p{
+    width: 100%;
+    font-size: 20px;
+
+}
+
+
+.content p svg{
+    fill: white; 
+    width: 100px;
+
+
+}
+
+.content form{
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+
     width: 100%;
     height: 100%;
-    box-sizing:border-box;
-    padding:20px;
-    display:flex;
+    gap: 5px;
+    margin-bottom: calc(140%*200px);
 
-    align-items:center;
-    justify-content:center;
-    flex-direction:row;
-    gap:8px;
+}
+
+.content form label{
+    width: 50%;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+
+}
+
+.content form input, .content form .btns button .content form .pass input{
+    margin-bottom: 21px;
+    background-color: black;
+    border: 1px solid white;
+    border-radius: 9px;
+    color: white;
+    height: 35px;
+    width: 30%;
+    padding: 5px;
+
+}
+
+.content form .btns{
+    display: inline-flex;
+    height: 50px;
+    width: 400px;
+    gap: 20px;
+
+}
+
+.content form .btns a{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    background-color: white;
+    color:black;
+    text-decoration: none;
+    padding: 5px;
+    height: 31px;
+    width: 20%;
+    font-size: 14px;    
+    border-radius: 9px;
+
+}
+
+.content form .btns button{
+    width: 20%;
+    height: 41px;
+    margin-bottom: 0;
+    background-color: black;
+    border: 2px solid white;
+    color: white;
+    border-radius: 9px;
+}
+
+.content form .pass{
+    display: flex;
+    flex-direction: column;
+    width: 50%;
+
+}
+
+.content form .pass input{
+    width: 100%;
+
+
+}
+
+.content form .pass input:last-child{
+    height: 41px;
+    width: 33%;
+    
+
+}
+
+
+.content a{
+    color:white;
+
+
+}
+
+.content p svg{
+    width: 100px;
+
 
 }
 
 .container .created-items .create .add{
     width: 20px;
-
-}
-
-.flash{
-    background-color: #fde68a;
-    color: #92400e;
-    padding: 10px;
-    border-radius: 5px;
-    margin-bottom: 15px;
-    width: 300px;
-    text-align: center;
-}
-
-form {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    width: 300px;    
 
 }

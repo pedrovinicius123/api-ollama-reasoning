@@ -1,13 +1,37 @@
-{% extends "base.html" %}
+{% extends "header.html" %}
+{% block link %}
+<link rel="stylesheet" href="{{url_for('static', filename='css/form.css')}}" data-turbo-track="reload">
+<link rel="stylesheet" href="{{url_for('static', filename='css/article-gen.css')}}" data-turbo-track="reload">
+<link rel="stylesheet" href="{{url_for('static', filename='css/header-out.css')}}" data-turbo-track="reload">
 
-{% block content %}
+{% endblock %}
+
+{% block main %}
 <div class="content">
-    <form action="" method="post">
-        {{form.hidden_tag()}}
-        {% for field in form %}
-        {{field.label if field.label != "CSRF Token" else ""}} <br> {{field()}} <br>
-        {% endfor %}
+    <form method="post" action="/submit_article">
+        <label for="log_dir"> Projeto para analisar</label>
+        <select name="log_dir" id="log_dir">
+            {% for available in logs %}
+               <option value="{{available.filename.split('/')[0]}}"> {{available.filename.split('/')[0]}}</option>
+            {% endfor %}
+        </select>
+        <label for="model">Modelo</label>
+        <select name="model" id="model">
+            <option value="gemini-3-flash-preview:cloud">Gemini</option>
+            <option value="deepseek-v3.2:cloud">Deepseek V3</option>
+            <option value="gpt-oss:120b-cloud">GPT OSS 120b</option>
+        </select>
+        <label for="iterations">Iterações</label>
+        <input type="number" name="iterations" id="iterations">
+
+        <label for="n_tokens">Numero de tokens</label>
+        <input type="number" name="n_tokens" id="n_tokens">
+
+        <label for="api_key">Chave da API Ollama</label>
+        <input type="text" name="api_key" id="api_key">
+
+        <button type="submit">Criar artigo</button>
+
     </form>
 </div>
-
 {% endblock %}

@@ -28,9 +28,6 @@ O projeto **API Ollama Reasoning** é uma aplicação Flask que implementa um si
 ├── database/
 │   ├── __init__.py
 │   └── db.py                      # Modelos MongoDB
-├── forms/
-│   ├── search.py                  # Formulário de busca
-│   └── user.py                    # Formulários de autenticação
 ├── templates/                      # Templates HTML
 ├── static/                         # CSS e assets estáticos
 └── DOCUMENTATION.md               # Este arquivo

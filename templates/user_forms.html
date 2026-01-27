@@ -1,303 +1,68 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login & Cadastro</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
-    <style>
-        body{
-            @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
-            font-family: Inter;
-            box-sizing: 0px;
-            margin: 0px;
-            display: flex;
-            justify-content: center;
-        }
-        
-        .tela{
-            background: linear-gradient(180deg, rgba(0, 0, 0, 1) 0%, rgba(17, 21, 255, 1) 100%);;
-            width: 1440px;
-            height: 2065px;
-        }
+{% extends 'base.html' %}
 
-        header{
-            background-color: #aaaaaa;
-            width: 1440px;
-            height: 111px;
-            border-bottom: 1px solid black;
-        }
+{% block link %}
+<meta name="turbo-visit-control" , content="reload">
+<link rel="stylesheet" href="{{url_for('static', filename='css/header-in.css')}}">
+<link rel="stylesheet" href="{{url_for('static', filename='css/main.css')}}">
+{% endblock %}
 
-        header img{
-            height: 40px;
-            position: relative;
-            left: 220px;
-            top: 33px;
-        }
+{% block content %}
+<div class="content">
+    {% if not login and not ch_user %}
+    <p>Cadastro &#128293;</p>
+    <form action="/register" method="post">
+        <label for="username">Nome de Usuário</label>
+        <input type="text" id="username" name="username">
 
-        header a{
-            width: 95px;
-            height: 34px;
-            border-radius: 50px;
-            background-color: #000000;
-            color: #ffffff;
-            text-decoration: none;
-            padding: 10px 20px 10px;
-            margin-left: 25px;
-            font-size: 13px;
-            position: relative;
-            left: 750px;
-            top: 20px;
-        }
+        <label for="email">Email</label>
+        <input type="text" id="email" name="email">
 
-        #a1{
-            color: black;
-            background-color: #ffffff;
-        }
+        <label for="phone">Telefone</label>
+        <input type="tel" id="phone" name="phone">
 
-        #a3{
-            background-color: #1115ff;
-        }
-    
-        button{
-            width: 95px;
-            height: 34px;
-            border-radius: 50px;
-            color: black;
-            border: none;
-            background-color: #ffffff;
-            font-weight: bold;
-            font-family: Inter;
-            margin: 5px;
-        }
+        <div class="pass">
+            <label for="password">Senha</label>
+            <input type="password" id="password" name="password">
 
-        .content button{
-            position: relative;
-            top: 110px;
-            left: 148px;
-        }
-
-        #button2{
-            color: #ffffff;
-            background-color: #000000;
-            border: 1px solid #ffffff;
-        }
-
-        .content{
-            display: flex;
-            height: 374px;
-            width: 594px;
-            border: 1px solid;
-            border-radius: 50px;
-            background: #000000;
-            position: relative;
-            left: 370px;
-            top: 200px;
-        }
-
-        .content h1, h2{
-            font-size: 14px;
-            color: #ffffff;
-            font-weight: 500;
-        }
-
-        .content h1{
-            position: relative;
-            left: 79px;
-            top: 30px;
-            width: 100%;
-        }
-
-        .content h1 svg{
-            height: 29px;
-            width: 30px;
-        }
-
-        .content h2, input, button{
-            position: relative;
-            top: 80px;
-            right: 80px;
-        }
-
-        .content input{
-            font-weight: 500;
-            background: rgba(0, 0, 0, 0.0);
-            color: #ffffff;
-            width: 412px;
-            height: 41px;
-            border-radius: 10px;
-            border: 2px solid #ffffff;
-            padding: 0px 10px;
-        }
-
-        .content2{
-            display: flex;
-            height: 696px;
-            width: 594px;
-            border: 1px solid;
-            border-radius: 50px;
-            background: #000000;
-            position: relative;
-            left: 370px;
-            top: 400px;
-        }
-
-        .content2 h1{
-            font-size: 14px;
-            color: #ffffff;
-            font-weight: 500;
-            position: relative;
-            left: 80px;
-            top: 110px;
-        }
-
-        .content2 input{
-            font-weight: 500;
-            background: rgba(0, 0, 0, 0.0);
-            color: #ffffff;
-            width: 412px;
-            height: 41px;
-            border-radius: 10px;
-            border: 2px solid #ffffff;
-            padding: 0px 10px;
-            position: relative;
-            left: 5px;
-        }
-
-        .content2 #nome{
-            width: 165px;
-            position: relative;
-            top: 170px;
-        }
-
-        .content2 #sobrenome{
-            width: 207px;
-            position: relative;
-            left: 210px;
-            top: 85px;
-        }
-
-        .content2 #email{
-            position: relative;
-            top: 90px;
-        }
-
-        .content2 #telefone{
-            position: relative;
-            top: 100px;
-        }
-
-        .content2 #senha1{
-            width: 165px;
-            position: relative;
-            left: 5px;
-            top: 120px;
-        }
-
-        .content2 #senha2{
-            width: 207px;
-            position: relative;
-            left: 210px;
-            top: 35px;
-        }
-
-        .content2 button{
-            position: relative;
-            left: 0px;
-            top: 110px;
-        }
-
-        .content2 #h2_1{
-            position: relative;
-            top: 169.1px;
-            left: 4px;
-        }
-
-        .content2 #h2_2{
-            position: relative;
-            left: 210px;
-            top: 85px;
-        }
-
-        .content2 #h2_3{
-            position: relative;
-            left: 5px;
-            top: 90px;
-        }
-
-        .content2 #h2_4{
-            position: relative;
-            left: 5px;
-            top: 100px;
-        }
-
-        .content2 #h2_5{
-            position: relative;
-            left: 5px;
-            top: 119px;
-        }
-
-        .content2 #h2_6{
-            position: relative;
-            left: 210px;
-            top: 35px;
-        }
-    </style>
-</head>
-<body>
-    <div class="tela">
-        <!--Login e Cadastro-->
-
-        <header>
-            <img src="Captura de tela 2025-12-15 141104.png" alt="">
-            <a id='a1' href="index.html">Home</a>
-            <a href="user_forms.html">Login</a>
-            <a id='a3' href="user_forms.html">Cadastro</a>
-        
-            <p></p>
-        </header>
-        
-        <div class="content">
-            <h1>Bem-Vindo de Volta 😊</h1>
-        
-            <form action="">
-                <h2>Email/Username</h2>
-                <input type="email" placeholder="Insira seu e-mail" required minlength="10">
-
-                <h2>Senha</h2>
-                <input type="password" placeholder="Insira sua senha" required minlength="8">
-
-                <button>Cadastro</button>
-                <button id="button2">Acessar</button>
-            </form>
+            <label for="confirm_password">Confirme a senha</label>
+            <input type="password" id="confirm_password" name="confirm_password">
+            <input type="submit" value="Register">
         </div>
 
-        <div class="content2">
-            <h1>Criar Conta</h1>
-        
-            <form action="">
-                <h2 id="h2_1">Nome</h2>
-                <input id="nome" type="text" placeholder="Seu nome" required>
 
-                <h2 id="h2_2">Sobrenome</h2>
-                <input id="sobrenome" type="text" placeholder="Seu sobrenome" required>
 
-                <h2 id="h2_3">E-mail</h2>
-                <input id="email" type="email" placeholder="voce@gmail.com" required minlength="10">
+    </form>
+    {% elif login and not ch_user %}
+    <p>Bem-Vindo de Volta 😄</p>
+    <form action="/login" method="post">
+        <label for="username_or_email">Usuario/Email</label>
+        <input type="text" id="username_or_email" name="username_or_email">
 
-                <h2 id="h2_4">Telefone</h2>
-                <input id="telefone" type="tel" placeholder="(84)99999-9999" required minlength="9">
-
-                <h2 id="h2_5">Senha</h2>
-                <input id="senha1" type="password" placeholder="Mínimo 8 Caracteres" required minlength="8">
-
-                <h2 id="h2_6">Confirmar Senha</h2>
-                <input id="senha2" type="password" placeholder="Confirme sua senha" required minlength="8">
-
-                <button>Login</button>
-                <button id="button2">Criar conta</button>
-            </form>
+        <label for="password"> Password </label>
+        <input type="password" id="password" name="password">
+        <div class="btns">
+            <a href="/register"> Cadastro </a>
+            <button type="submit">Login</button>
         </div>
-    </div>    
-</body>
-</html>
+
+    </form>
+    {% else %}
+    <p>Mudar usuário</p>
+    <form action="/update" method="post">
+        <label for="old_username">Nome antigo</label>
+        <input type="text" id="old_username" name="old_username">
+
+        <label for="new_username">Novo nome de usuário</label>
+        <input type="text" id="new_username" name="new_username">
+        <div class="btns">
+            <button type="submit" style="width:100px;">Mudar nome</button>
+        </div>
+
+    </form>
+
+    {% endif %}
+    {% for message in get_flashed_messages(with_categories=true) %}
+    <div class="flash {{ message[0] }}">{{ message[1] }}</div>
+    {% endfor %}
+</div>
+{% endblock %}
