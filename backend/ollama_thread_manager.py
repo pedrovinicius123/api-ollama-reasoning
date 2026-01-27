@@ -184,7 +184,7 @@ class OllamaRequestQueue:
         if not hasattr(self.thread_local, "reasoning_instance"):
             self.thread_local.reasoning_instance = {}
         
-        key = f"{model}-{kwargs.get("username")}/{kwargs.get("request_prompt")}-{kwargs.get("api_key")}"
+        key = f"{model}-{kwargs.get('username')}/{kwargs.get('request_prompt')}-{kwargs.get('api_key')}"
         logging.info(f"Key: {key}")
         if key not in self.thread_local.reasoning_instance:
             logging.info("Key not found, add new one.")
@@ -200,7 +200,7 @@ class OllamaRequestQueue:
 
         
     def _process_request_article(self, app, **kwargs):
-        logging.info(f"Session key: {kwargs.get("session_id")}")
+        logging.info(f"Session key: {kwargs.get('session_id')}")
         thinker = self._get_reasoning_instance(**kwargs)
         print("N Tokens", kwargs.get("n_tokens"))
         result = store_article(
