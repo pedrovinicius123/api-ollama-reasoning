@@ -168,7 +168,7 @@ class OllamaRequestQueue:
         with self.request_lock:
             self.active_requests.append(future)
 
-        logger.info(f"Requisição de artigo submetida! modelo: {kwargs.get("model")}")
+        logger.info(f"Requisição de artigo submetida! modelo: {kwargs.get('model')}")
         return sess_id
 
     def submit_request_response(self, app, **kwargs):
@@ -177,7 +177,7 @@ class OllamaRequestQueue:
         with self.request_lock:
             self.active_requests.append(future)
 
-        logger.info(f"Requisição de Raciocínio realizada com sucesso! modelo: {kwargs.get("model")}")
+        logger.info(f"Requisição de Raciocínio realizada com sucesso! modelo: {kwargs.get('model')}")
         return sess_id
 
     def _get_reasoning_instance(self, model="deepseek-v3.1:671b-cloud", **kwargs):
