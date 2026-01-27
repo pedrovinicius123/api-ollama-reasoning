@@ -5,11 +5,8 @@ from markdown import markdown
 from concurrent.futures import ThreadPoolExecutor
 from backend.api.model.reasoning import Reasoning
 from backend.database.db import User, Upload
-from flask import Response, stream_with_context, render_template
 import logging
 import os
-import time
-import uuid
 import re
 
 
@@ -89,9 +86,8 @@ def store_article(thinker, app, username: str, log_dir: str, iterations:int = 1,
     # Executa o gerador dentro de um contexto de aplicação Flask
     # (necessário para acesso ao banco de dados e sessões)
     with app.app_context():
-        print("Starting generation")
-        gen, response = thinker.write_article(username=username, log_dir=log_dir, iterations=iterations_int, n_tokens=n_tokens, searched_in=article_obj.citations)
-        print("POST GENERATION")
+        gen, _ = thinker.write_article(username=username, log_dir=log_dir, iterations=iterations_int, n_tokens=n_tokens, searched_in=article_obj.citations)
+
         logging.info(f'gen {gen}')
         for chunk in gen:
             if chunk:

@@ -21,9 +21,7 @@ from flask_caching import Cache
 from functools import wraps
 from datetime import timedelta
 from concurrent.futures import ThreadPoolExecutor
-from bson.objectid import ObjectId
 import concurrent
-import time # for debugging
 import threading
 
 from backend.database.db import db, upload_file, Upload, User
@@ -114,7 +112,6 @@ def before_first_request():
 def update_load(executor:ThreadPoolExecutor):
     def run_executor(task, data, key, is_article):
         running = True
-        ("NONE?", next(data))
         while running:
             try:
                 print(next(data))
@@ -186,8 +183,6 @@ def home():
             cits.remove('')
 
         session_id = uuid.uuid4()
-        print(f"Request desc {request.form.get("description")}")
-
         # Cria arquivo de contexto inicial
         upload_file(
             user=usr,
@@ -278,9 +273,8 @@ def login():
         
 
         if users.first() is None:
-            flash("No users matching the description", 'error')
+            flash('No users matching the description', 'error')
         else:
-            print("OPA")
             usr = users.first()
             
             # Valida a senha contra o hash armazenado
@@ -291,10 +285,8 @@ def login():
 
                 # Garante que as mudanças na sessão sejam persistidas
                 session.modified = True
-                print("OPA")
                 return redirect("/")
             else:
-                print("AAAA")
                 flash('Incorrect Password', 'error')
 
     return render_template('user_forms.html', login=True, ch_user=False)
@@ -341,7 +333,7 @@ def register():
         existing = User.objects(__raw__={'$or':[{'username':username},{'email':email}]})
         
         if existing.first() is not None:
-            flash("Username or email already registered", 'error')
+            flash('Username or email already registered', 'error')
         else:
             
             session['logged_in'] = True
@@ -361,8 +353,7 @@ def register():
             session.modified = True
 
             return redirect(url_for('home'))
-    
-    print('AAAA')
+        
     return render_template('user_forms.html', login=False, ch_user=False)
 
 # ============================================================================
@@ -450,7 +441,7 @@ def view_logs(username: str, log_dir: str):
     article = Upload.objects(filename__contains=f"{log_dir}/article.md", creator=user).first()
     
     if response is None:
-        flash("No logs found for this user/log_dir", 'error')
+        flash('No logs found for this user/log_dir', 'error')
         return redirect(url_for('home'))
     
     return render_template('response.html', response=response.file.read().decode("utf-8"), article=article.file.read().decode("utf-8"), response_id=response.session_id, article_id=article.session_id, read_markdown_to_html=read_markdown_to_html)

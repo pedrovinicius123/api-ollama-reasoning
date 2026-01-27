@@ -23,7 +23,6 @@ from flask_mongoengine import MongoEngine
 from mongoengine import Document, FileField, StringField, IntField, ReferenceField, ListField, ObjectIdField
 from werkzeug.security import generate_password_hash, check_password_hash
 import os.path as path
-import time
 
 # Inicializa a instância do MongoEngine (será configurada pela app Flask)
 db = MongoEngine()
@@ -324,7 +323,7 @@ def upload_file(user: User, log_dir: str, filename: str, raw_file, initial: bool
 
     except Exception as err:
         # Arquivo não existe - criar novo
-        print(f"File does not exist, creating new upload: {err}")
+        print(f'File does not exist, creating new upload: {err}')
         
         # Cria novo documento Upload
         new_upload_doc = Upload(creator=user)
@@ -344,7 +343,7 @@ def upload_file(user: User, log_dir: str, filename: str, raw_file, initial: bool
         content = b" "
         if not initial:
             # Se não é upload inicial, lê conteúdo anterior
-            print("Updating existing file...")
+            print('Updating existing file...')
             content = existing.file.read() if existing and existing.file.read() else b" "
             # Remove arquivo antigo do GridFS
             existing.file.delete()

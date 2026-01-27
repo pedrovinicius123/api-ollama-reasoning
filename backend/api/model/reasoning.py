@@ -369,7 +369,6 @@ class Reasoning:
         return iterate(), 200
 
     def write_article(self, username: str, log_dir: str, searched_in:list, iterations: int, n_tokens: int):
-        print("SOCOROOOOOOOOOOOOOOOOO")
         
         """
         Gera um artigo estruturado baseado no raciocínio realizado.
@@ -419,9 +418,7 @@ class Reasoning:
             ...     print(chunk, end='', flush=True)
         """
 
-        print("HEEEERRREEEE")
         usr = User.objects(username=username).first()
-        print("HERE")
         def iterate(usr=usr):
             """
             Função interna que itera para gerar artigo.
@@ -450,7 +447,6 @@ class Reasoning:
                 
                 # Acumula prompt anterior para contexto
                 gen = "\n\n"
-                print("ITERATION")
                 
                 # Faz requisição ao Ollama
                 r = make_request_ollama_reasoning(
