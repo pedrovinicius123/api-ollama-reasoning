@@ -1,34 +1,33 @@
-name:BuildandDeployFlask(GHCR)
+name: Build and Deploy Flask (GHCR)
 
 on:
   push:
     branches:
-      -main
+      - main
 
 permissions:
-  contents:read
-  packages:write# OBRIGATÓRIO para GHCR
+  contents: read
+  packages: write
 
 jobs:
   build:
-    runs-on:ubuntu-latest
-
-  steps:
-    -name:Checkoutdocódigo
-    uses:actions/checkout@v4
-
-    -name:LoginnoGitHubContainerRegistry
-    uses:docker/login-action@v3
+    runs-on: ubuntu-latest
     
-with:
-  registry:ghcr.io
-  username:${{github.actor}}
-  password:${{secrets.GITHUB_TOKEN}}
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
 
-  -name:Buildepushdaimagem
-  uses:docker/build-push-action@v5
+      - name: Login no GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-with:
-  push:true
-  tags:ghcr.io/${{github.repository}}:latest
-
+      - name: Build e push da imagem
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:latest
+          # OU alternativamente:
+          # tags: ghcr.io/${{ github.repository }}:latest
