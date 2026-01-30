@@ -362,36 +362,40 @@ def register():
 def view_logs_links():
     if request.method == 'POST':
         search_query = request.form.get('search', '').strip()
-        return redirect(url_for('view_logs_links_query', query=search_query.lower(), all=request.args.get('all', False)))
+        return redirect(url_for('view_logs_links_query', query=search_query.lower(), all=request.args.get('all', 0)))
 
     projects = []
-    if request.args.get('all', False):
+    print(request.args.get('all') == 1)
+    print('OPA')
+    if int(request.args.get('all')) == 1:
+        print('!')
         projects = Upload.objects(filename__contains='/response.md')
         return render_template('search.html', researches=projects, username=False)
 
     else:
+        print('?')
         user = User.objects(username=session.get('username', '')).first()
         projects = Upload.objects(filename__contains='/response.md', creator=user)
-
+        
         return render_template('search.html', researches=projects, username=session.get('username', ''))
 
 @app.route("/search", methods=["GET", "POST"])
 def view_logs_links_query():
     if request.method == "POST":
-        search_query = request.form.get('search', '').strip()
-        return redirect(url_for('view_logs_links_query', search=search_query.lower(), all=request.args.get('all', False)))
+        search_query = request.form.get('search', 'empty').strip()
+        return redirect(url_for('view_logs_links_query', search=search_query.lower(), all=request.args.get('all', 0)))
     
     projects = []
-    query = request.args.get('query', '')
-    if request.args.get('all', False):
+    query = request.args.get('query', 'empty')
+    if int(request.args.get('all', 0)) == 1:
         projects = Upload.objects(filename__contains=query+'/response.md')
         return render_template('search.html', researches=projects, username=False)
 
     else:
-        if query == '':
-            return redirect(url_for('view_logs_links', all=True))
+        if query == 'empty':
+            return redirect(url_for('view_logs_links', all=0))
 
-        username = session.get('username')
+        username = session.get('username', '')
         user = User.objects(username=username).first()
         projects = Upload.objects(filename__contains=query+'/response.md', creator=user)
 
