@@ -330,7 +330,7 @@ def register():
         session.permanent = True
         
         # Verifica se username ou email já estão registrados
-        existing = User.objects(__raw__={'$or':[{'username':username},{'email':email}]})
+        existing = User.objects(__raw__={'$or':[{'username':username},{'email':email}, {'phone':phone}]})
         
         if existing.first() is not None:
             flash('Username or email already registered', 'error')
@@ -340,9 +340,7 @@ def register():
             session['username'] = username
             
             # Cria novo usuário com ID sequencial
-            usr = User(username=username, email=email, phone=phone)
-            usr = User(username=username, email=email, phone=phone)
-            
+            usr = User(username=username, email=email, phone=phone)            
             # Gera hash bcrypt da senha
             usr.generate_password_hash(password)
             
