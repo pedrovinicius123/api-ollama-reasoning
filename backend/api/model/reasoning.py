@@ -60,7 +60,12 @@ Retorna: string com o prompt formatado
 
 continue_prompt = lambda width: f"""
 Now, extensively create an mathematical approximation using the anterior alternative,
-AND PROPOSE {width} NEW ONES, BASED ON THE PREVIOUS ALTERNATIVE, TO CONTINUE THE TASK.
+AND PROPOSE {width} NEW ONES, BASED ON THE PREVIOUS ALTERNATIVE CHOSEN, TO CONTINUE THE TASK.
+For example, if you chose alternative 2, the rest of the approach will be based on it.
+From alternative 2, you can chose alternative 5:
+
+5 -> 3 -> 2- > ...
+And so forth.
 
 Remember: don't use any conjecture, only theorems, lemmas and other mathematical concepts well known.
 IF SOLUTION:
