@@ -63,7 +63,11 @@ Now, extensively create an mathematical approximation using the anterior alterna
 AND PROPOSE {width} NEW ONES TO CONTINUE THE TASK.
 
 Remember: don't use any conjecture, only theorems, lemmas and other mathematical concepts well known.
-If any solution encountered, return SOLVED, else *only return PROGRESS*
+IF SOLUTION:
+    return SOLVED
+ELSE:
+    return PROGRESS
+
 *Display math in $$ for block equations and $ for inline*
 """
 """
