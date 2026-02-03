@@ -68,10 +68,8 @@ From alternative 2, you can chose alternative 5:
 And so forth.
 
 Remember: don't use any conjecture, only theorems, lemmas and other mathematical concepts well known.
-IF SOLUTION:
-    return SOLVED
-ELSE:
-    return PROGRESS
+IF the solution is found (proof or contradiction on the question) return SOLVED
+ELSE return PROGRESS
 
 *Display math in $$ for block equations and $ for inline*
 """

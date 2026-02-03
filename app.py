@@ -437,16 +437,19 @@ def view_logs(username: str, log_dir: str):
         return redirect(url_for('home'))
 
     # Busca o arquivo de resposta para este log
-    response = Upload.objects(filename__contains=f"{log_dir}/response.md", creator=user).first()
+    response_prev = Upload.objects(filename__contains=f"{log_dir}/response.md", creator=user).first()
 
     # Busca o arquivo de artigo (pode não existir)
-    article = Upload.objects(filename__contains=f"{log_dir}/article.md", creator=user).first()
+    article_prev = Upload.objects(filename__contains=f"{log_dir}/article.md", creator=user).first()
     
-    if response is None:
+    if response_prev is None:
         flash('No logs found for this user/log_dir', 'error')
         return redirect(url_for('home'))
+
+    article = '' if not article_prev else article_prev.file.read().decode('utf-8')
+    response = '' if not response_prev else response_prev.file.read().decode('utf-8')
     
-    return render_template('response.html', response=response.file.read().decode("utf-8"), article=article.file.read().decode("utf-8"), response_id=response.session_id, article_id=article.session_id, read_markdown_to_html=read_markdown_to_html)
+    return render_template('response.html', response=response, article=article, response_id=response_prev.session_id, article_id=article_prev.session_id, read_markdown_to_html=read_markdown_to_html)
 
 
 # ============================================================================
