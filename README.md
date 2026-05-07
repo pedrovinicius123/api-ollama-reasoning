@@ -4,9 +4,13 @@ On this software, you can prompt any question and see the AI solving it.
 
 ## Members
 Pedro Vinicius - Original
+
 Alvaro Antonio - Original
+
 Deisiane Gomes - Original
+
 Ester Rosendo - New comming
+
 Vitor Cesar - New comming
 
 ## !EARLY ACESS!
