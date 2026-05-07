@@ -13,6 +13,8 @@ Ester Rosendo - New comming
 
 Vitor Cesar - New comming
 
+Enzo Lucatonny - New comming
+
 ## !EARLY ACESS!
 This new algorithm is yet on early acess and has open code, so you can give any suggestion and change the code as you wish.
 This is for math and AI lovers, who are thrilled by every minimal detail!
