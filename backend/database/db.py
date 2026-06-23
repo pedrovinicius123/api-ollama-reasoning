@@ -20,6 +20,7 @@ Dependências:
 """
 
 from flask_mongoengine import MongoEngine
+from flask_login import UserMixin
 from mongoengine import Document, FileField, StringField, IntField, ReferenceField, ListField, ObjectIdField
 from werkzeug.security import generate_password_hash, check_password_hash
 import os.path as path
@@ -32,7 +33,7 @@ db = MongoEngine()
 # MODELO: USER - USUÁRIOS DA APLICAÇÃO
 # ============================================================================
 
-class User(Document):
+class User(Document, UserMixin):
     """
     Modelo de Usuário para autenticação e autorização.
     
@@ -78,10 +79,14 @@ class User(Document):
         - Sempre usar check_password() para validar
     """
     
+    suap_id= StringField(required=True, unique=True)
     username = StringField(required=True, unique=True)
     email = StringField(required=True, unique=True)
-    phone = StringField(required=True, unique=True)
-    password_hash = StringField(required=True)
+    photo = StringField(required=True, unique=True)
+    campus = StringField(required=True)
+    usertype = StringField(requireed=True)
+    role= StringField(required=True, default="USER")
+    password_hash = StringField(required=False)
 
 
     def generate_password_hash(self, new_password):

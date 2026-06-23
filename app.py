@@ -18,14 +18,17 @@ Dependências principais:
 from flask import Flask, session, render_template, redirect, url_for, request, flash, copy_current_request_context
 from turbo_flask import Turbo
 from flask_caching import Cache
+from authlib.integrations.flask_client import OAuth
 from functools import wraps
 from datetime import timedelta
-from concurrent.futures import ThreadPoolExecutor
+from flask_login import LoginManager, login_user, logout_user, login_required
+
 import concurrent
 import threading
+import requests
 
 from backend.database.db import db, upload_file, Upload, User
-from backend.ollama_thread_manager import read_markdown_to_html, ollama_queue
+from backend.ollama_thread_manager import read_markdown_to_html, ollama_queue, ThreadPoolExecutor
 from dotenv import load_dotenv
 import os, uuid
 
@@ -43,10 +46,12 @@ app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 
 # Configuração do MongoDB - URI obtida do arquivo .env
-app.config['MONGODB_HOST'] = f"mongodb+srv://almeidaxavier:{os.getenv('MONGODB_PASSWORD')}@ollamaapi.ic5dh8p.mongodb.net/?appName=OllamaAPI"
+app.config['MONGODB_HOST'] = f"mongodb+srv://PedroVinicius:{os.getenv('MONGODB_PASSWORD')}@ollama-api-reasoning.arvytqv.mongodb.net/?appName=ollama-api-reasoning"
 
 # Tempo de vida da sessão do usuário (1 hora)
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)
+login_manager = LoginManager(app)
+login_manager.login_view = "login"
 
 # Inicializa o Turbo-Flask para atualizações em tempo real
 turbo = Turbo()
@@ -55,6 +60,36 @@ cache = Cache(config = {
     "CACHE_TYPE": "SimpleCache",  # Flask-Caching related configs
     "CACHE_DEFAULT_TIMEOUT": 300
 })
+
+# ============================================================================
+# REGISTRO SUAP OAUTH2
+# ============================================================================
+
+oauth = OAuth(app)
+oauth.register(
+    name="suap",
+    client_id=os.getenv("CLIENT_ID"),
+    client_secret=os.getenv("CLIENT_SECRET"),
+    # URL de autorização
+    authorize_url=
+    "https://suap.ifrn.edu.br/o/authorize/",
+
+    # URL de obtenção do token
+    access_token_url=
+    "https://suap.ifrn.edu.br/o/token/",
+
+    # Escopo solicitado
+    client_kwargs={
+        "scope": "identificacao"
+    }
+    
+)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.objects.get(
+        id=user_id
+    )
 
 # ============================================================================
 # INICIALIZAÇÃO DAS EXTENSÕES
@@ -76,33 +111,7 @@ executor = None
 # FUNÇÕES UTILITÁRIAS
 # ============================================================================
 
-def check_if_logged_in(f):
-    """
-    Decorator que verifica se o usuário está autenticado.
-    
-    Se o usuário não estiver logado (session['logged_in'] não existir ou ser False),
-    redireciona para a página de login. Caso contrário, permite o acesso à rota.
-    
-    Args:
-        f: Função de rota a ser protegida
-        
-    Returns:
-        function: Função decorada com verificação de autenticação
-        
-    Exemplo:
-        @app.route("/dashboard")
-        @check_if_logged_in
-        def dashboard():
-            return "Página protegida"
-    """
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if not session.get("logged_in") or not session.get("username"):
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    return decorated
-
-@app.before_first_request
+@app.before_request
 def before_first_request():
     global active_threads
     executor = ThreadPoolExecutor()
@@ -139,7 +148,7 @@ def update_load(executor:ThreadPoolExecutor):
 # ============================================================================
 
 @app.route("/", methods=["GET", "POST"])
-@check_if_logged_in
+@login_required
 def home():
     """
     Página inicial (dashboard) do usuário autenticado, com formulário para submeter uma pergunta/problema para raciocínio profundo.
@@ -290,6 +299,149 @@ def login():
                 flash('Incorrect Password', 'error')
 
     return render_template('user_forms.html', login=True, ch_user=False)
+    
+@app.route("/login/suap")
+def login_suap():
+    # Gera a URL absoluta de callback.
+    # Exemplo:
+    # http://localhost:5000/oauth/callback
+    redirect_uri = url_for(
+        "callback_suap",
+        _external=True
+    )
+
+    # Redireciona o usuário para o SUAP.
+    return oauth.suap.authorize_redirect(
+        redirect_uri
+    )
+    
+# --------------------------------------------------
+# CALLBACK OAUTH
+# --------------------------------------------------
+
+@app.route("/oauth/callback")
+def callback_suap():
+
+    # ==================================================
+    # ETAPA 1
+    # Troca o código OAuth recebido pelo SUAP
+    # por um access_token.
+    # ==================================================
+
+    token_data = (
+        oauth.suap
+        .authorize_access_token()
+    )
+
+    access_token = token_data[
+        "access_token"
+    ]
+
+    # ==================================================
+    # ETAPA 2
+    # Consulta os dados do usuário autenticado.
+    # ==================================================
+
+    resposta = requests.get(
+        "https://suap.ifrn.edu.br/api/rh/eu/",
+        headers={
+            "Authorization":
+            f"Bearer {access_token}"
+        }
+    )
+
+    # Caso o SUAP retorne erro HTTP
+    # (401, 403, 404, 500...)
+    # uma exceção será lançada.
+    resposta.raise_for_status()
+    dados = resposta.json()
+
+    # ==================================================
+    # ETAPA 3
+    # Verifica se o usuário já existe
+    # no banco local.
+    # ==================================================
+    print(dados)
+    usuario = None
+    try:
+        usuario = User.objects.get(
+            suap_id=dados["identificacao"]
+        )
+        print(usuario.suap_id)
+    except: pass
+    # ==================================================
+    # ETAPA 4
+    # Se não existir, cria.
+    # ==================================================
+
+    if not usuario:
+        usuario = User(
+            suap_id=dados[
+                "identificacao"
+            ],
+            username=dados[
+                "nome_usual"
+            ],
+            email=dados[
+                "email"
+            ],
+            photo=dados.get(
+                "foto"
+            ),
+            campus=dados.get(
+                "campus"
+            ),
+            usertype=dados.get(
+                "tipo_usuario"
+            )
+        )
+
+    # ==================================================
+    # ETAPA 5
+    # Se já existir, atualiza os dados
+    # vindos do SUAP.
+    # ==================================================
+
+    else:
+
+        usuario.nome = dados[
+            "nome_usual"
+        ]
+
+        usuario.email = dados[
+            "email"
+        ]
+
+        usuario.foto = dados.get(
+            "foto"
+        )
+
+        usuario.campus = dados.get(
+            "campus"
+        )
+
+        usuario.tipo_usuario = dados.get(
+            "tipo_usuario"
+        )
+
+    # Salva alterações no banco.
+    usuario.save()
+
+    # ==================================================
+    # ETAPA 6
+    # Cria a sessão local da aplicação.
+    # ==================================================
+
+    login_user(usuario)
+
+    # ==================================================
+    # ETAPA 7
+    # Redireciona para a área protegida.
+    # ==================================================
+
+    return redirect(
+        url_for("home")
+    )
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -457,7 +609,7 @@ def view_logs(username: str, log_dir: str):
 # ============================================================================
 
 @app.route("/<username>/<log_dir>/write_logs")
-@check_if_logged_in
+@login_required
 @cache.cached(timeout=1000)
 def write(username: str, log_dir: str):
     """
@@ -516,7 +668,7 @@ def write(username: str, log_dir: str):
 
 
 @app.route("/<username>/<log_dir>/write_article", methods=["GET", "POST"])
-@check_if_logged_in
+@login_required
 @cache.cached(timeout=1000)
 def write_article(username: str, log_dir: str):
     """
@@ -574,7 +726,7 @@ def write_article(username: str, log_dir: str):
 # ============================================================================
 
 @app.route("/<username>/<log_dir>/delete")
-@check_if_logged_in
+@login_required
 def delete(username:str, log_dir:str):
     if session.get("username") != username:
         flash("You cannot delete others logs", "error")
@@ -590,16 +742,18 @@ def delete(username:str, log_dir:str):
     return redirect(url_for("home"))
 
 @app.route('/logout')
-@check_if_logged_in
+@login_required
 def logout():
+    logout_user()
     session['username'] = None
     return redirect('/login')
 
 @app.route('/delete')
-@check_if_logged_in
+@login_required
 def delete_account():
     user = User.objects(username=session.get('username')).first()
     creations = Upload.objects(creator=user)
+    logout_user()
     if user:
         user.delete()
         for c in creations:
@@ -625,7 +779,7 @@ def update_user():
 
 
 @app.route("/submit_article", methods=["GET", "POST"])
-@check_if_logged_in
+@login_required
 def submit_article():
     """
     Formulário para gerar um artigo baseado em um log de raciocínio existente.
